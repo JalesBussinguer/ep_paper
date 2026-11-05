@@ -13,6 +13,7 @@ Existem duas implementações:
 """
 
 import logging
+import math
 import unicodedata
 
 from PIL import Image, ImageDraw, ImageFont
@@ -57,6 +58,7 @@ def plot_hotspot_map(municipalities, bin_col, title, output_path):
     import matplotlib.pyplot as plt
 
     fig, ax = plt.subplots(figsize=(10, 10))
+    bounds = municipalities.total_bounds
 
     for categoria in GI_BIN_ORDER:
         subset = municipalities[municipalities[bin_col] == categoria]
@@ -71,6 +73,7 @@ def plot_hotspot_map(municipalities, bin_col, title, output_path):
         )
 
     ax.set_title(title, fontsize=13)
+    _add_matplotlib_map_elements(ax, bounds)
     ax.set_axis_off()
     ax.legend(loc="lower left", fontsize=8, frameon=True, title="Classificação (Gi*)")
 
@@ -78,6 +81,68 @@ def plot_hotspot_map(municipalities, bin_col, title, output_path):
     fig.savefig(output_path, dpi=200)
     plt.close(fig)
     logger.info("Mapa salvo em %s", output_path)
+
+
+def map_scale_length_km(map_width_m):
+    raw_length_km = map_width_m * 0.18 / 1000
+    if raw_length_km <= 0:
+        raise ValueError("A largura do mapa deve ser positiva.")
+    magnitude = 10 ** math.floor(math.log10(raw_length_km))
+    return max(step * magnitude for step in (1, 2, 5) if step * magnitude <= raw_length_km)
+
+
+def _add_matplotlib_map_elements(ax, bounds):
+    width, height = bounds[2] - bounds[0], bounds[3] - bounds[1]
+    scale_length_km = map_scale_length_km(width)
+    padding = 0.16
+    ax.set_xlim(bounds[0] - width * padding, bounds[2] + width * padding)
+    ax.set_ylim(bounds[1] - height * padding, bounds[3] + height * padding)
+    x = bounds[0] - width * padding * 0.75
+    y = 0.045
+    length = scale_length_km * 1000
+    transform = ax.get_xaxis_transform()
+    ax.plot([x, x + length], [y, y], color="black", linewidth=3,
+            transform=transform, clip_on=False, zorder=7)
+    ax.plot([x, x + length], [y, y], color="white", linewidth=1.2,
+            transform=transform, clip_on=False, zorder=8)
+    for tick_x in (x, x + length):
+        ax.plot([tick_x, tick_x], [y - 0.012, y + 0.012], color="black",
+                linewidth=1, transform=transform, clip_on=False, zorder=9)
+    ax.text(
+        x + length / 2,
+        y + 0.015,
+        f"{scale_length_km:g} km",
+        transform=transform,
+        ha="center",
+        va="bottom",
+        fontsize=8,
+        clip_on=False,
+        zorder=9,
+    )
+    ax.annotate(
+        "N",
+        xy=(0.95, 0.94),
+        xytext=(0.95, 0.86),
+        xycoords="axes fraction",
+        textcoords="axes fraction",
+        ha="center",
+        va="bottom",
+        fontweight="bold",
+        annotation_clip=False,
+        arrowprops={"arrowstyle": "-|>", "color": "black", "lw": 1.2},
+        zorder=10,
+    )
+    ax.text(
+        0.99,
+        0.015,
+        "SIRGAS 2000 / Brazil Polyconic (EPSG:5880)",
+        transform=ax.transAxes,
+        ha="right",
+        va="bottom",
+        fontsize=6,
+        clip_on=False,
+        zorder=10,
+    )
 
 
 def _remove_accents(text):
@@ -133,11 +198,18 @@ def render_hotspot_map_pil(
     a cor de fundo por cima do preenchimento externo.
     """
     margin = 40
+    horizontal_padding = 0.12
+    map_top = margin + 30
     legend_h = 30 * (len(GI_BIN_ORDER) + 1) + 20
 
     minx, miny, maxx, maxy = municipalities.total_bounds
-    scale = (width - 2 * margin) / (maxx - minx)
-    height = int((maxy - miny) * scale) + 2 * margin + legend_h
+    map_width_px = int((width - 2 * margin) * (1 - 2 * horizontal_padding))
+    scale = map_width_px / (maxx - minx)
+    map_left = margin + int((width - 2 * margin) * horizontal_padding)
+    map_right = map_left + map_width_px
+    map_height_px = int((maxy - miny) * scale)
+    map_bottom = map_top + map_height_px
+    height = map_bottom + 80 + legend_h
 
     img = Image.new("RGB", (width, height), background_color)
     draw = ImageDraw.Draw(img)
@@ -152,7 +224,12 @@ def render_hotspot_map_pil(
                 continue
             polys = geom.geoms if geom.geom_type == "MultiPolygon" else [geom]
             for poly in polys:
-                exterior, interiors = _polygon_to_pixels(poly, minx, maxy, scale, margin)
+                exterior, interiors = _polygon_to_pixels(poly, minx, maxy, scale, map_left)
+                exterior = [(x, y + map_top - margin) for x, y in exterior]
+                interiors = [
+                    [(x, y + map_top - margin) for x, y in ring]
+                    for ring in interiors
+                ]
                 draw.polygon(exterior, fill=cor, outline=(255, 255, 255))
                 for ring in interiors:
                     draw.polygon(ring, fill=background_color)
@@ -165,7 +242,57 @@ def render_hotspot_map_pil(
 
     draw.text((margin, 5), _remove_accents(title), fill=(0, 0, 0), font=font_title)
 
+    scale_length_km = map_scale_length_km(maxx - minx)
+    scale_length_px = scale_length_km * 1000 * scale
+    scale_x = margin
+    scale_y = map_bottom + 20
+    draw.line(
+        (scale_x, scale_y, scale_x + scale_length_px, scale_y),
+        fill=(0, 0, 0),
+        width=6,
+    )
+    draw.line(
+        (scale_x, scale_y, scale_x + scale_length_px, scale_y),
+        fill=(255, 255, 255),
+        width=2,
+    )
+    for tick_x in (scale_x, scale_x + scale_length_px):
+        draw.line((tick_x, scale_y - 8, tick_x, scale_y + 8), fill=(0, 0, 0), width=2)
+    scale_label = f"{scale_length_km:g} km"
+    label_box = draw.textbbox((0, 0), scale_label, font=font)
+    draw.rectangle(
+        (
+            scale_x + scale_length_px / 2 - (label_box[2] - label_box[0]) / 2 - 3,
+            scale_y - 25,
+            scale_x + scale_length_px / 2 + (label_box[2] - label_box[0]) / 2 + 3,
+            scale_y - 8,
+        ),
+        fill=background_color,
+    )
+    draw.text(
+        (scale_x + scale_length_px / 2, scale_y - 24),
+        scale_label,
+        fill=(0, 0, 0),
+        font=font,
+        anchor="mt",
+    )
+
+    north_x = width - margin / 2
+    north_y = map_top + 20
+    draw.text((north_x, north_y - 45), "N", fill=(0, 0, 0), font=font, anchor="mm")
+    draw.line((north_x, north_y - 30, north_x, north_y + 5), fill=(0, 0, 0), width=3)
+    draw.polygon(
+        [(north_x, north_y - 37), (north_x - 8, north_y - 22), (north_x + 8, north_y - 22)],
+        fill=(0, 0, 0),
+    )
+
     legend_y = height - legend_h + 10
+    draw.text(
+        (margin, legend_y - 38),
+        _remove_accents("SIRGAS 2000 / Brazil Polyconic (EPSG:5880)"),
+        fill=(0, 0, 0),
+        font=font,
+    )
     draw.text((margin, legend_y - 20), _remove_accents("Classificação (Gi*):"), fill=(0, 0, 0), font=font)
     for i, categoria in enumerate(reversed(GI_BIN_ORDER)):
         y = legend_y + i * 26

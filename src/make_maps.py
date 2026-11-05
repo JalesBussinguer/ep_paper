@@ -36,14 +36,14 @@ def main():
     visualization.render_hotspot_map_pil(
         result,
         "gi_bin",
-        "Hotspots de desmatamento no Cerrado (2020-2026)\n"
+        "Hotspots de desmatamento no Cerrado (2020-2025)\n"
         "Getis-Ord Gi* sobre área desmatada acumulada por município",
         config.AREA_MAP_PATH,
     )
     visualization.render_hotspot_map_pil(
         result,
         "gi_bin_pct",
-        "Hotspots de desmatamento no Cerrado (2020-2026)\n"
+        "Hotspots de desmatamento no Cerrado (2020-2025)\n"
         "Getis-Ord Gi* sobre % da área municipal dentro do Cerrado desmatada",
         config.PERCENT_MAP_PATH,
     )

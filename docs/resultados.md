@@ -23,7 +23,7 @@ Os dois indicadores apresentaram forte autocorrelação espacial positiva (I de 
 
 ![Figura 1](../output/refinamento/figuras/fig01_hotspots_gi_star.png)
 
-**Figura 1.** Hotspots de desmatamento no Cerrado (Getis-Ord Gi\*), 2020–2025: (a) área desmatada (km²); (b) proporção da área municipal desmatada (%).
+**Figura 1.** Hotspots de desmatamento no Cerrado (Getis-Ord Gi\*), 2020–2025: (a) área desmatada (km²); (b) proporção da área municipal desmatada (%). Mapas com norte, escala gráfica e sistema de referência SIRGAS 2000 / Policônica do Brasil (EPSG:5880).
 
 Na análise da área desmatada, 220 municípios foram classificados como *hot spot* (41 a 90%, 117 a 95% e 62 a 99% de confiança). Na análise da proporção, foram 280 *hot spots* (41, 106 e 133, respectivamente) e 253 *cold spots* (131 a 90%, 113 a 95% e 9 a 99%). A união dos dois critérios resultou em **348 municípios hotspot**, que somam 54.727 km², ou 66,9% de toda a área desmatada.
 
@@ -62,7 +62,7 @@ Maranhão e Tocantins reúnem 177 dos 348 municípios hotspot (51%) e 57,5% da �
 
 ![Figura 2](../output/refinamento/figuras/fig02_dinamica_temporal.png)
 
-**Figura 2.** Dinâmica temporal da pressão de desmatamento: (a) área desmatada anual (barras) e número de municípios hotspot por ano (linha); (b) persistência dos hotspots entre 2020–2022 e 2023–2025, com o deslocamento do centro de gravidade da área desmatada (seta).
+**Figura 2.** Dinâmica temporal da pressão de desmatamento: (a) área desmatada anual (barras) e número de municípios hotspot por ano (linha); (b) persistência dos hotspots entre 2020–2022 e 2023–2025, com o deslocamento do centro de gravidade da área desmatada (seta). O mapa inclui norte, escala gráfica e sistema de referência SIRGAS 2000 / Policônica do Brasil (EPSG:5880).
 
 O número de hotspots na área desmatada foi de 263 em 2020–2022 e de 172 em 2023–2025. Dos 1.435 municípios, 139 foram **persistentes**, 33 **emergentes**, 124 **extintos** e 1.139 permaneceram **sem hotspot**. Na escala anual, os hotspots foram 317, 175, 153, 143, 188 e 166 de 2020 a 2025. Oito municípios mantiveram status de hotspot em todos os seis anos: Fernando Falcão, Formosa da Serra Negra e Timon (MA); São Desidério e Correntina (BA); Lavandeira e Aurora do Tocantins (TO); e Barreiras do Piauí (PI).
 
@@ -72,7 +72,7 @@ O centro de gravidade da área desmatada deslocou-se de (−12,43°; −47,82°)
 
 ![Figura 3](../output/refinamento/figuras/fig03_robustez_gi_star.png)
 
-**Figura 3.** Sensibilidade dos hotspots à definição de vizinhança e à correção para testes múltiplos: (a) área; (b) proporção; (c) índice de Jaccard em relação à configuração Queen.
+**Figura 3.** Sensibilidade dos hotspots à definição de vizinhança e à correção para testes múltiplos: (a) área; (b) proporção; (c) índice de Jaccard em relação à configuração Queen; (d) concordância municipal entre oito combinações de vizinhança e variável. O mapa inclui norte, escala gráfica e sistema de referência SIRGAS 2000 / Policônica do Brasil (EPSG:5880).
 
 **Tabela 4.** Hotspots por definição de vizinhança (pseudo valor-*p* e após correção FDR).
 
@@ -83,7 +83,7 @@ O centro de gravidade da área desmatada deslocou-se de (−12,43°; −47,82°)
 | 8 vizinhos mais próximos | 149 | 83 | 0,62 | 322 | 285 | 0,79 |
 | Banda de 150 km | 287 | 267 | 0,59 | 449 | 433 | 0,55 |
 
-A correção por FDR reduz a lista de hotspots em 4% a 44%. A concordância (Jaccard) varia de 0,55 a 0,79, o que indica que o **núcleo** do Matopiba é estável, enquanto a **periferia** depende da escala de vizinhança. Essa sensibilidade é inerente a estatísticas locais e justifica a classificação por níveis de confiança em vez de uma categoria binária.
+A correção por FDR reduz a lista de hotspots em 4% a 44%. A concordância (Jaccard) varia de 0,55 a 0,79. No painel (d), 101 municípios são hotspots nas oito combinações (quatro vizinhanças × área e proporção), 471 aparecem como hotspot em uma a sete combinações e 863 não são classificados como hotspot em nenhuma. A concentração espacial dos 101 municípios totalmente concordantes sustenta a identificação de um núcleo robusto no Matopiba; a classificação de parte da periferia varia com a definição.
 
 ## 5. Trajetória da cobertura da terra nos polígonos desmatados
 
@@ -117,6 +117,8 @@ Considerando todos os municípios amostrados, a transição *t* − 1 → *t* fo
 A composição difere entre os grupos (V de Cramér = 0,240; IC 95%: 0,207–0,269; *p* de permutação = 0,0005), com 348 municípios hotspot (26.650 fragmentos) e 884 de controle (20.073 fragmentos). O tamanho efetivo de amostra de Kish é de aproximadamente 9.400 a 9.800 por grupo.
 
 A diferença central é a **proporção de conversões efetivas de vegetação natural**. Nos hotspots, 45,9% da área (40,9% mais 5,0%) corresponde a conversão observada no ano da detecção ou no seguinte, ao passo que no controle esse valor é de 23,7%. A área "já antrópica" é 21,7 p.p. menor nos hotspots: o desmatamento detectado no controle incide em grande parte sobre áreas que o MapBiomas já classifica como antrópicas, o que indica sobreposição com áreas previamente alteradas.
+
+**Sensibilidade à coorte de 2020.** Excluindo essa coorte e mantendo a classificação hotspot/controle original, a comparação das coortes de 2021–2024 ainda indica diferenças entre os grupos, mas o tamanho de efeito cai (V de Cramér = 0,087; IC 95%: 0,063–0,114; *p* de permutação = 0,0005; 335 municípios hotspot e 552 de controle com amostra). A conversão no ano da detecção é de 56,4% nos hotspots e 47,7% no controle (diferença de 8,7 p.p.; IC 95%: 5,1–12,2); a categoria "já antrópico" é de 20,6% e 28,6%, respectivamente (diferença de −7,9 p.p.; IC 95%: −10,4 a −5,4). Portanto, a direção das diferenças se mantém, mas a magnitude da associação agregada é sensível ao peso da coorte de 2020.
 
 **Gradiente por nível de confiança.** A conversão no ano da detecção aumenta com a confiança do Gi\*: 19,8% no controle, 22,4% (*n* = 53) em hotspots de 90%, 37,3% (*n* = 135) em 95% e 46,3% (*n* = 160) em 99%. Por variável, o valor é de 42,9% (*n* = 220) na área e de 44,2% (*n* = 280) na proporção. O gradiente monotônico indica que a concentração espacial do desmatamento está associada a uma conversão mais direta e imediata.
 
@@ -161,9 +163,9 @@ A conversão é rápida: nas coortes de 2021 a 2024, 63,8% a 77,2% da área natu
 
 ![Figura 7](../output/refinamento/figuras/fig07_conversao_destino.png)
 
-**Figura 7.** Conversão e uso da terra pós-desmatamento nos municípios hotspot: (a) taxa de conversão da vegetação natural; (b) classe de destino predominante.
+**Figura 7.** Conversão e uso da terra pós-desmatamento nos municípios hotspot: (a) taxa de conversão da vegetação natural; (b) classe de destino predominante. Os mapas incluem norte, escala gráfica e sistema de referência SIRGAS 2000 / Policônica do Brasil (EPSG:5880).
 
-Nos municípios hotspot, a área natural em *t* − 1 era de 36.814 km², dos quais 27.255 km² (74,0%) foram convertidos. Das estimativas municipais, 255 dos 348 municípios foram consideradas confiáveis. Por área, o destino foi **mosaico de agricultura e pastagem (76,2%)**, **pastagem (21,3%)**, **agricultura (2,4%)** e outras classes (0,1%). O mosaico foi a classe predominante em 245 municípios, e a pastagem em 103.
+Nos municípios hotspot, a área natural em *t* − 1 era de 36.814 km², dos quais 27.255 km² (74,0%) foram convertidos. Das estimativas municipais, 255 dos 348 municípios foram consideradas confiáveis; somente essas estimativas entram no mapa de destinos. Por área, o destino foi **mosaico de agricultura e pastagem (76,2%)**, **pastagem (21,3%)**, **agricultura (2,4%)** e outras classes (0,1%). Entre os 255 municípios com estimativa confiável, o mosaico foi predominante em 192 e a pastagem em 63. Os totais 245 e 103 incluem municípios sem estimativa confiável e não devem ser interpretados como contagens válidas.
 
 **Tabela 8.** Maiores áreas convertidas e taxa de conversão (%).
 
@@ -217,7 +219,7 @@ Com relação aos objetivos do estudo: (1) a **localização** da pressão foi i
 
 ### 6.5 Limitações
 
-1. **Domínio da coorte de 2020.** A coorte concentra 48% da área e 84% das interseções, com fragmentos de mediana igual a 0,011 km², o que pode refletir regime de mapeamento distinto. Os resultados que dependem do total de interseções devem ser interpretados com cautela, e recomenda-se uma análise de sensibilidade sem essa coorte. As coortes de 2021 a 2024 apresentam resultados mais homogêneos entre grupos.
+1. **Domínio da coorte de 2020.** A coorte concentra 48% da área e 84% das interseções, com fragmentos de mediana igual a 0,011 km², o que pode refletir regime de mapeamento distinto. A comparação sem 2020 mantém a direção das diferenças entre grupos, mas reduz o tamanho de efeito (V de Cramér de 0,240 para 0,087); portanto, a magnitude dos resultados agregados depende dessa coorte. A classificação dos municípios foi mantida conforme a análise completa.
 2. **Unidade e resolução.** A unidade é a interseção polígono–município, e a resolução anual impede ordenar eventos dentro do mesmo ano. A coorte de 2025 não possui ano posterior.
 3. **Defasagem entre fontes.** Cerca de 25% da área ainda é natural no ano da detecção, o que mostra que a coincidência temporal entre PRODES e MapBiomas é imperfeita.
 4. **Definição de hotspot.** A união de duas variáveis é inclusiva, e a periferia dos hotspots depende da vizinhança (Figura 3).
@@ -226,7 +228,7 @@ Com relação aos objetivos do estudo: (1) a **localização** da pressão foi i
 
 ### 6.6 Trabalhos futuros
 
-Incluem a análise de sensibilidade excluindo 2020, a conclusão da revisão visual, a incorporação de variáveis explicativas (infraestrutura, aptidão agrícola, áreas protegidas e estrutura fundiária), a análise espaço-temporal por cubo espaço-tempo e a avaliação da conversão em relação à legalidade do desmatamento.
+Incluem a conclusão da revisão visual, a incorporação de variáveis explicativas (infraestrutura, aptidão agrícola, áreas protegidas e estrutura fundiária), a análise espaço-temporal por cubo espaço-tempo e a avaliação da conversão em relação à legalidade do desmatamento.
 
 ## 7. Conclusões
 
@@ -234,4 +236,4 @@ Incluem a análise de sensibilidade excluindo 2020, a conclusão da revisão vis
 2. O centro de gravidade do desmatamento deslocou-se para nordeste, e 139 municípios mantiveram status de hotspot nos dois períodos analisados.
 3. Nos hotspots, a conversão é rápida e praticamente irreversível: 74,0% da área natural foi convertida, quase integralmente para mosaico de agricultura e pastagem e pastagem, e a regeneração é inferior a 1%.
 4. Os hotspots diferem do controle na origem do desmatamento: há mais conversão direta de vegetação natural (40,9% contra 19,8%) e menos áreas previamente antrópicas (31,4% contra 53,1%), com gradiente crescente em função do nível de confiança.
-5. Os resultados são robustos às referências temporais e à correção por testes múltiplos, mas dependem da definição de vizinhança na periferia dos hotspots e do tratamento da coorte de 2020.
+5. Os resultados são robustos às referências temporais e à correção por testes múltiplos, mas dependem da definição de vizinhança na periferia dos hotspots; a magnitude da comparação hotspot–controle também diminui quando se exclui 2020.

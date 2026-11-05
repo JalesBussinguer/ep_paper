@@ -19,7 +19,7 @@ from matplotlib.patches import PathPatch, Patch
 from matplotlib.path import Path
 from matplotlib.ticker import FuncFormatter
 
-from . import config, io_utils
+from . import config, io_utils, visualization
 from .mapbiomas_event_transition_analysis import CLASS_GROUP_BY_CODE
 
 logger = logging.getLogger(__name__)
@@ -80,7 +80,7 @@ GI_LABELS = {
 FIGURE_TITLES = [
     "Figure 1. Deforestation hotspots in the Cerrado (Getis-Ord Gi*), 2020–2025: (a) deforested area (km²); (b) share of municipal area deforested (%).",
     "Figure 2. Temporal dynamics of deforestation pressure: (a) annual deforested area and number of hotspot municipalities; (b) hotspot persistence and shift in the deforested-area center of gravity.",
-    "Figure 3. Hotspot sensitivity to neighborhood definitions and multiple-testing correction: (a) area; (b) proportion; (c) Jaccard index relative to Queen contiguity.",
+    "Figure 3. Hotspot sensitivity to neighborhood definitions and multiple-testing correction: (a) area; (b) proportion; (c) Jaccard index relative to Queen contiguity; (d) municipal agreement across eight neighborhood-variable combinations.",
     "Figure 4. Land-cover group flows before (t−1), during (t), and after (t+1) detection, across the 2020–2024 cohorts.",
     "Figure 5. Pixel-level trajectory typology: (a) hotspots versus controls; (b) conversion in the detection year by Gi* confidence level. Error bars show 95% confidence intervals from municipality bootstrap.",
     "Figure 6. Cumulative conversion of the natural area at t−1 by detection cohort: (a) hotspots; (b) controls; (c) conversion rate by state through 2025.",
@@ -162,6 +162,72 @@ def finish_map(ax, outline, states, bounds=None):
     ax.set_axis_off()
 
 
+def add_map_elements(ax, bounds):
+    width, height = bounds[2] - bounds[0], bounds[3] - bounds[1]
+    scale_length_km = visualization.map_scale_length_km(width)
+    padding = 0.16
+    x_limits = (bounds[0] - width * padding, bounds[2] + width * padding)
+    y_limits = (bounds[1] - height * padding, bounds[3] + height * padding)
+    ax.set_xlim(*x_limits)
+    ax.set_ylim(*y_limits)
+    x = bounds[0] - width * padding * 0.75
+    y = 0.045
+    scale_length_m = scale_length_km * 1000
+    transform = ax.get_xaxis_transform()
+    ax.plot([x, x + scale_length_m], [y, y], color="black", linewidth=3,
+            transform=transform, clip_on=False, zorder=7)
+    ax.plot(
+        [x, x + scale_length_m],
+        [y, y],
+        color="white",
+        linewidth=1.2,
+        transform=transform,
+        clip_on=False,
+        zorder=8,
+    )
+    for tick_x in (x, x + scale_length_m):
+        ax.plot([tick_x, tick_x], [y - 0.012, y + 0.012], color="black",
+                linewidth=1, transform=transform, clip_on=False, zorder=9)
+    ax.text(
+        x + scale_length_m / 2,
+        y + 0.015,
+        f"{scale_length_km:g} km",
+        transform=transform,
+        ha="center",
+        va="bottom",
+        fontsize=7,
+        color="black",
+        clip_on=False,
+        zorder=9,
+    )
+    ax.annotate(
+        "N",
+        xy=(0.95, 0.94),
+        xytext=(0.95, 0.86),
+        xycoords="axes fraction",
+        textcoords="axes fraction",
+        ha="center",
+        va="bottom",
+        fontsize=9,
+        fontweight="bold",
+        annotation_clip=False,
+        arrowprops={"arrowstyle": "-|>", "color": "black", "lw": 1.2},
+        zorder=10,
+    )
+    ax.text(
+        0.99,
+        0.015,
+        "SIRGAS 2000 / Brazil Polyconic (EPSG:5880)",
+        transform=ax.transAxes,
+        ha="right",
+        va="bottom",
+        fontsize=5.5,
+        color="black",
+        clip_on=False,
+        zorder=10,
+    )
+
+
 def categorical_map(ax, frame, column, colors, labels, order, title, legend_title=None, legend_loc="upper left"):
     frame.plot(ax=ax, color="#F7F7F7", edgecolor="none")
     for category in order:
@@ -187,6 +253,7 @@ def fig_gi_maps(frame, states, outline):
     ):
         categorical_map(ax, merged, column, GI_COLORS, GI_LABELS, order, title, legend_title="Gi* confidence")
         finish_map(ax, outline, states, bounds)
+        add_map_elements(ax, bounds)
         panel_label(ax, letter)
     fig.tight_layout()
     save(fig, "fig01_hotspots_gi_star.png")
@@ -236,6 +303,7 @@ def fig_annual_and_persistence(frame, states, outline):
     for status, color in status_colors.items():
         merged[merged["status_area"] == status].plot(ax=ax1, color=color, edgecolor="white", linewidth=0.05)
     finish_map(ax1, outline, states, outline.total_bounds)
+    add_map_elements(ax1, outline.total_bounds)
     points = gpd.GeoSeries(gpd.points_from_xy(shift["lon"], shift["lat"]), crs="EPSG:4326").to_crs(config.METRIC_CRS)
     ax1.annotate("", xy=(points.iloc[1].x, points.iloc[1].y), xytext=(points.iloc[0].x, points.iloc[0].y),
                  arrowprops=dict(arrowstyle="-|>", color="black", lw=1.6), zorder=6)
@@ -248,16 +316,20 @@ def fig_annual_and_persistence(frame, states, outline):
     save(fig, "fig02_dinamica_temporal.png")
 
 
-def fig_robustness():
+def fig_robustness(frame, states, outline):
     table = pd.read_csv(config.REFINED_DIR / "robustez_gi_vizinhanca.csv")
+    municipalities = pd.read_csv(
+        config.REFINED_DIR / "robustez_gi_municipios.csv",
+        dtype={"CD_MUN": "string"},
+    )
     names = list(dict.fromkeys(table["vizinhanca"]))
     short = ["Queen\n(base)", "Queen\n2nd order", "8 nearest\nneighbors", "150 km\ndistance band"]
-    fig, axes = plt.subplots(1, 3, figsize=(13, 4.4), gridspec_kw={"width_ratios": [1.25, 1.25, 0.9]})
+    fig, axes = plt.subplots(2, 2, figsize=(13, 9), gridspec_kw={"height_ratios": [1, 1.2]})
     positions = np.arange(len(names))
     width = 0.38
     for ax, variable, title, letter in (
-        (axes[0], "area", "Deforested area (km²)", "a"),
-        (axes[1], "pct", "Share of municipal area (%)", "b"),
+        (axes[0, 0], "area", "Deforested area (km²)", "a"),
+        (axes[0, 1], "pct", "Share of municipal area (%)", "b"),
     ):
         part = table[table["variavel"] == variable].set_index("vizinhanca").loc[names]
         ax.bar(positions - width / 2, part["n_hotspots"], width, color=HOT_COLOR, label="Permutation pseudo-p value")
@@ -270,14 +342,14 @@ def fig_robustness():
         ax.set_title(title, fontsize=9.5)
         ax.set_ylim(0, 560)
         panel_label(ax, letter)
-    axes[0].set_ylabel("Municipalities classified as hot spots (n)")
-    axes[0].legend(frameon=False, loc="upper left")
+    axes[0, 0].set_ylabel("Municipalities classified as hot spots (n)")
+    axes[0, 0].legend(frameon=False, loc="upper left")
     jaccard = (
         table[table["vizinhanca"] != names[0]]
         .pivot(index="vizinhanca", columns="variavel", values="jaccard_vs_base")
         .loc[names[1:]]
     )
-    ax = axes[2]
+    ax = axes[1, 0]
     ax.barh(np.arange(3) - 0.2, jaccard["area"], 0.38, color=CONTROL_COLOR, label="Area")
     ax.barh(np.arange(3) + 0.2, jaccard["pct"], 0.38, color="#9DB4C0", label="Proportion")
     ax.set_yticks(np.arange(3))
@@ -288,6 +360,55 @@ def fig_robustness():
     ax.legend(frameon=False, loc="lower right")
     ax.invert_yaxis()
     panel_label(ax, "c")
+
+    definitions = ("Queen (base)", "Queen de 2ª ordem", "8 vizinhos mais próximos",
+                   "Banda de distância (150 km)")
+    hotspot_columns = [
+        f"classe|{metric}|{definition}"
+        for definition in definitions
+        for metric in ("area", "pct")
+    ]
+    municipality_agreement = municipalities[["CD_MUN", *hotspot_columns]].copy()
+    municipality_agreement["n_definicoes_hotspot"] = municipality_agreement[
+        hotspot_columns
+    ].apply(lambda row: row.str.startswith("Hot Spot").sum(), axis=1)
+    agreement = frame.merge(
+        municipality_agreement[["CD_MUN", "n_definicoes_hotspot"]],
+        on="CD_MUN",
+        how="left",
+        validate="one_to_one",
+    )
+    agreement["concordancia"] = np.select(
+        [
+            agreement["n_definicoes_hotspot"] == len(hotspot_columns),
+            agreement["n_definicoes_hotspot"].between(1, len(hotspot_columns) - 1),
+        ],
+        ["Hot spot in all 8 definitions", "Hot spot in some definitions"],
+        default="Not a hot spot in any definition",
+    )
+    agreement_colors = {
+        "Hot spot in all 8 definitions": "#B2182B",
+        "Hot spot in some definitions": "#FDBB84",
+        "Not a hot spot in any definition": "#EEEEEE",
+    }
+    agreement_labels = {
+        "Hot spot in all 8 definitions": "Hot spot in all 8 definitions",
+        "Hot spot in some definitions": "Hot spot in 1–7 definitions",
+        "Not a hot spot in any definition": "Not a hot spot in any definition",
+    }
+    ax = axes[1, 1]
+    categorical_map(
+        ax,
+        agreement,
+        "concordancia",
+        agreement_colors,
+        agreement_labels,
+        list(agreement_colors),
+        "Hot spot classification agreement",
+    )
+    finish_map(ax, outline, states, outline.total_bounds)
+    add_map_elements(ax, outline.total_bounds)
+    panel_label(ax, "d")
     fig.tight_layout()
     save(fig, "fig03_robustez_gi_star.png")
 
@@ -466,6 +587,7 @@ def fig_conversion_maps(frame, states, outline):
     hot.plot(ax=ax, column="taxa_conversao_pct", cmap="YlOrRd", vmin=0, vmax=100, edgecolor="white",
              linewidth=0.05, legend=True, legend_kwds={"shrink": 0.55, "label": "Conversion rate (%)"})
     finish_map(ax, outline, states, bounds)
+    add_map_elements(ax, bounds)
     ax.set_title("Natural-vegetation conversion rate (hot spot municipalities)", fontsize=9.5)
     panel_label(ax, "a")
     ax = axes[1]
@@ -477,6 +599,7 @@ def fig_conversion_maps(frame, states, outline):
     categorical_map(ax, hot, "destino_predominante", colors, destination_labels, list(colors),
                     "Predominant destination class", legend_title="Post-conversion land use")
     finish_map(ax, outline, states, bounds)
+    add_map_elements(ax, bounds)
     panel_label(ax, "b")
     fig.tight_layout()
     save(fig, "fig07_conversao_destino.png")
@@ -492,7 +615,7 @@ def main():
     frame["CD_MUN"] = frame["CD_MUN"].astype("string")
     fig_gi_maps(frame, states, outline)
     fig_annual_and_persistence(frame, states, outline)
-    fig_robustness()
+    fig_robustness(frame, states, outline)
     fig_sankey(trajectories)
     fig_typology()
     fig_conversion()

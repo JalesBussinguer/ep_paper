@@ -71,6 +71,8 @@ O Gi\* foi recalculado (i) para dois períodos (2020–2022 e 2023–2025) e (ii
 3. **Testes múltiplos:** correção por taxa de descobertas falsas (FDR) de Benjamini-Hochberg (*q* = 0,05), aplicada aos valores-*p* bilaterais derivados do escore Z.
 4. **Reprodutibilidade interna:** verificou-se a concordância com o Gi\* original (100%).
 
+Para visualizar a sensibilidade espacial, cada município foi contado entre as oito combinações de vizinhança e variável (quatro vizinhanças × área e proporção) em que foi classificado como hotspot, sem correção FDR. A Figura 3 distingue municípios hotspot em todas as combinações, em parte delas ou em nenhuma. Os mapas são projetados em SIRGAS 2000 / Policônica do Brasil (EPSG:5880) e incluem seta do norte e escala gráfica.
+
 ## 7. Análise de trajetória da cobertura da terra
 
 ### 7.1 Amostragem dos polígonos
@@ -127,10 +129,12 @@ As estimativas são ponderadas pelo inverso da probabilidade de inclusão, e a i
 
 Avaliou-se ainda o gradiente da conversão em função do nível de confiança do Gi\* (90%, 95% e 99%) e da variável que originou a classificação (área ou proporção).
 
+A análise de sensibilidade exclui os fragmentos da coorte de 2020 e repete as mesmas estimativas e testes nas coortes de 2021–2024. Mantêm-se as classes hotspot e controle da análise completa, para isolar o efeito da exclusão da coorte nos resultados de trajetória. Os arquivos gerados são `comparacao_hotspot_controle_sem_2020.csv` e `comparacao_hotspot_controle_sem_2020_testes.csv`.
+
 ## 9. Conversão acumulada, destinos e padrão por estado
 
 - **Conversão acumulada:** para cada coorte de detecção, calculou-se, para defasagens de 0 a 5 anos, a proporção da área natural em *t* − 1 que passou a uso antrópico até a defasagem considerada.
-- **Destino da conversão:** para os pixels convertidos, identificou-se a classe de destino no primeiro ano antrópico, por município (classe predominante e distribuição em área). Estimativas municipais foram consideradas confiáveis quando o número de fragmentos amostrados era suficiente (255 dos 348 municípios hotspot).
+- **Destino da conversão:** para os pixels convertidos, identificou-se a classe de destino no primeiro ano antrópico, por município (classe predominante e distribuição em área). Estimativas municipais foram consideradas confiáveis quando havia pelo menos 30 fragmentos amostrados (255 dos 348 municípios hotspot); os mapas de destino mostram apenas essas estimativas.
 - **Conversão por unidade da federação:** a taxa de conversão foi calculada como a razão entre a área natural em *t* − 1 convertida e a área natural em *t* − 1.
 
 ## 10. Validação

@@ -21,6 +21,8 @@ import numpy as np
 import pandas as pd
 import rasterio
 from matplotlib.colors import ListedColormap
+from matplotlib.lines import Line2D
+from pyproj import CRS
 from rasterio.windows import from_bounds
 
 from . import config
@@ -30,7 +32,11 @@ from .pixel_extraction import raster_paths
 logger = logging.getLogger(__name__)
 
 PER_TYPOLOGY = 20
-PER_SHEET = 10
+PER_SHEET = 3
+SHEET_COLUMNS = 3
+SHEET_ROWS = 3
+PANEL_EXTENT_M = 10_000
+SCALE_LENGTH_KM = 2
 MIN_AREA_KM2, MAX_AREA_KM2 = 0.05, 3.0
 SEED = 20260102
 PANEL_CMAP = ListedColormap([GROUP_COLORS[group] for group in GROUP_ORDER])
@@ -86,24 +92,48 @@ def read_panel(src, bounds):
     return group_lookup()[data]
 
 
+def panel_bounds(geometry, crs):
+    map_crs = CRS.from_user_input(crs)
+    if not map_crs.is_geographic:
+        raise ValueError(f"Esperado CRS geográfico para os rasters MapBiomas, recebido {map_crs}.")
+    center_x, center_y = geometry.centroid.coords[0]
+    geod = map_crs.get_geod()
+    half_extent = PANEL_EXTENT_M / 2
+    west = geod.fwd(center_x, center_y, 270, half_extent)[0]
+    east = geod.fwd(center_x, center_y, 90, half_extent)[0]
+    south = geod.fwd(center_x, center_y, 180, half_extent)[1]
+    north = geod.fwd(center_x, center_y, 0, half_extent)[1]
+    return (west, south, east, north), center_y
+
+
+def add_page_map_elements(fig, crs):
+    scale_left, scale_right, scale_y = 0.375, 0.425, 0.05
+    fig.add_artist(Line2D([scale_left, scale_right], [scale_y, scale_y],
+                          transform=fig.transFigure, color="black", linewidth=1.2))
+    for x in (scale_left, scale_right):
+        fig.add_artist(Line2D([x, x], [scale_y - 0.006, scale_y + 0.006],
+                              transform=fig.transFigure, color="black", linewidth=0.8))
+    fig.text((scale_left + scale_right) / 2, scale_y + 0.008,
+             f"{SCALE_LENGTH_KM} km", ha="center", va="bottom", fontsize=7)
+    fig.text(0.53, 0.043, "↑ N", ha="center", va="center", fontsize=9, fontweight="bold")
+    fig.text(0.63, 0.043, f"CRS: {CRS.from_user_input(crs).to_string()}",
+             ha="left", va="center", fontsize=7)
+
+
 def draw_sheet(rows, geometries, path, title):
     paths = raster_paths()
     year_index = {year: i for i, year in enumerate(config.MAPBIOMAS_YEARS)}
-    n_rows = int(np.ceil(len(rows) / 2))
-    fig, axes = plt.subplots(n_rows, 6, figsize=(15, 2.6 * n_rows))
-    axes = np.atleast_2d(axes)
+    fig, axes = plt.subplots(SHEET_ROWS, SHEET_COLUMNS, figsize=(15, 15))
     sources = {}
     for position, (_, row) in enumerate(rows.iterrows()):
         geometry = geometries[row["sample_id"]]
-        minx, miny, maxx, maxy = geometry.bounds
-        pad = max(maxx - minx, maxy - miny, 0.0015) * 0.6
-        bounds = (minx - pad, miny - pad, maxx + pad, maxy + pad)
         years = [2019, int(row["ano_prodes"]), int(row["ano_prodes"]) + 1]
         labels = ["2019", f"{years[1]} (detecção)", f"{years[2]} (pós)"]
         for k, (year, label) in enumerate(zip(years, labels)):
-            ax = axes[position // 2, (position % 2) * 3 + k]
             if year not in sources:
                 sources[year] = rasterio.open(paths[year_index[year]])
+            bounds, center_lat = panel_bounds(geometry, sources[year].crs)
+            ax = axes[position, k]
             ax.imshow(read_panel(sources[year], bounds), cmap=PANEL_CMAP, vmin=0, vmax=len(GROUP_ORDER) - 1,
                       extent=(bounds[0], bounds[2], bounds[1], bounds[3]), interpolation="nearest")
             parts = [geometry] if geometry.geom_type == "Polygon" else list(geometry.geoms)
@@ -112,16 +142,16 @@ def draw_sheet(rows, geometries, path, title):
                 ax.plot(x, y, color="black", linewidth=0.8)
             ax.set_xlim(bounds[0], bounds[2])
             ax.set_ylim(bounds[1], bounds[3])
+            ax.set_aspect(np.cos(np.deg2rad(center_lat)))
             ax.set_xticks([])
             ax.set_yticks([])
             ax.set_title(f"#{row['sample_id']} {label}" if k == 0 else label, fontsize=6.5)
-    for ax in axes.ravel():
-        if not ax.has_data():
-            ax.axis("off")
+    map_crs = next(iter(sources.values())).crs if sources else config.INPUT_CRS
     for source in sources.values():
         source.close()
     fig.suptitle(title, fontsize=10)
-    fig.tight_layout()
+    add_page_map_elements(fig, map_crs)
+    fig.subplots_adjust(left=0.035, right=0.965, bottom=0.09, top=0.93, wspace=0.1, hspace=0.16)
     fig.savefig(path, dpi=130)
     plt.close(fig)
 

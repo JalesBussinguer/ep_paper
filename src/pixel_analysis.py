@@ -528,6 +528,24 @@ def main():
     comparison.to_csv(config.REFINED_DIR / "comparacao_hotspot_controle.csv", index=False, encoding="utf-8")
     comparison_summary.to_csv(config.REFINED_DIR / "comparacao_hotspot_controle_testes.csv", index=False, encoding="utf-8")
 
+    without_2020 = main_frame[main_frame["year"] != 2020]
+    comparison_2020_sensitivity, summary_2020_sensitivity = compare_groups(
+        without_2020, "tipologia", MAIN_TYPE_LABELS, np.random.default_rng(SEED + 1)
+    )
+    comparison_2020_sensitivity.to_csv(
+        config.REFINED_DIR / "comparacao_hotspot_controle_sem_2020.csv",
+        index=False,
+        encoding="utf-8",
+    )
+    summary_2020_sensitivity.assign(
+        coorte_excluida=2020,
+        anos_incluidos="2021-2024",
+    ).to_csv(
+        config.REFINED_DIR / "comparacao_hotspot_controle_sem_2020_testes.csv",
+        index=False,
+        encoding="utf-8",
+    )
+
     group_matrix, class_matrix = transition_matrices(table, classes, rng)
     group_matrix.to_csv(config.REFINED_DIR / "matriz_transicao_pixel_grupos.csv", index=False, encoding="utf-8")
     class_matrix.to_csv(config.REFINED_DIR / "matriz_transicao_pixel_classes.csv", index=False, encoding="utf-8")
