@@ -1,0 +1,15 @@
+geopandas>=1.0
+pyogrio>=0.7
+shapely>=2.1
+exactextract>=0.3.0
+esda>=2.10
+libpysal>=4.15
+pandas>=2.3
+numpy>=2.1
+scipy>=1.14
+Pillow
+matplotlib
+rasterio
+joblib
+pyarrow
+pytest

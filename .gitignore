@@ -1,0 +1,9 @@
+*.geojson
+*.csv
+*.tmp
+*.gpkg
+*.parquet
+*.csv.gz
+__pycache__/
+data/
+output/
