@@ -6,4 +6,7 @@
 *.csv.gz
 __pycache__/
 data/
-output/
+output/*
+!output/refinamento/
+output/refinamento/*
+!output/refinamento/figuras/
