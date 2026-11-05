@@ -1,0 +1,7 @@
+Figure 1. Deforestation hotspots in the Cerrado (Getis-Ord Gi*), 2020–2025: (a) deforested area (km²); (b) share of municipal area deforested (%).
+Figure 2. Temporal dynamics of deforestation pressure: (a) annual deforested area and number of hotspot municipalities; (b) hotspot persistence and shift in the deforested-area center of gravity.
+Figure 3. Hotspot sensitivity to neighborhood definitions and multiple-testing correction: (a) area; (b) proportion; (c) Jaccard index relative to Queen contiguity.
+Figure 4. Land-cover group flows before (t−1), during (t), and after (t+1) detection, across the 2020–2024 cohorts.
+Figure 5. Pixel-level trajectory typology: (a) hotspots versus controls; (b) conversion in the detection year by Gi* confidence level. Error bars show 95% confidence intervals from municipality bootstrap.
+Figure 6. Cumulative conversion of the natural area at t−1 by detection cohort: (a) hotspots; (b) controls; (c) conversion rate by state through 2025.
+Figure 7. Post-deforestation conversion and land use in hotspot municipalities: (a) natural-vegetation conversion rate; (b) predominant destination class.

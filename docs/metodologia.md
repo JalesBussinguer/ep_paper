@@ -153,7 +153,7 @@ python -m src.pixel_extraction     # trajetórias por pixel
 python -m src.pixel_analysis       # tipologias e inferência
 python -m src.gi_robustness        # robustez do Gi*
 python -m src.visual_validation    # validação visual
-python -m src.figures              # figuras
+python -m src.figures              # figuras em inglês; títulos em output/refinamento/figuras/titulos_figuras.txt
 pytest tests -q                    # testes (8)
 ```
 

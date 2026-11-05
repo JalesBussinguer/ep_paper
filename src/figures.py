@@ -1,5 +1,5 @@
 """
-Figuras finais do artigo (resolução de publicação, rótulos em português).
+Figuras finais do artigo (resolução de publicação, rótulos em inglês).
 
 Uso:
     python -m src.figures
@@ -20,13 +20,20 @@ from matplotlib.path import Path
 from matplotlib.ticker import FuncFormatter
 
 from . import config, io_utils
-from .mapbiomas_event_transition_analysis import CLASS_GROUP_BY_CODE, CLASS_GROUP_NAMES
+from .mapbiomas_event_transition_analysis import CLASS_GROUP_BY_CODE
 
 logger = logging.getLogger(__name__)
 
 DPI = 300
 SIMPLIFY_M = 1000
 GROUP_ORDER = ["vegetacao_natural", "uso_antrópico", "superficie_nao_vegetada", "agua", "sem_dados"]
+GROUP_LABELS = {
+    "vegetacao_natural": "Natural vegetation",
+    "uso_antrópico": "Anthropogenic use",
+    "superficie_nao_vegetada": "Non-vegetated surface",
+    "agua": "Water",
+    "sem_dados": "No data",
+}
 GROUP_COLORS = {
     "vegetacao_natural": "#2E7D32",
     "uso_antrópico": "#E6A100",
@@ -43,14 +50,14 @@ TYPOLOGY_ORDER = [
     "Outras transições",
 ]
 TYPOLOGY_WRAPPED = [
-    "Conversão no\nano da detecção",
-    "Conversão\nposterior",
-    "Vegetação\npersistente",
-    "Já antrópico\nantes do evento",
-    "Regeneração",
-    "Outras\ntransições",
+    "Conversion in\ndetection year",
+    "Post-detection\nconversion",
+    "Persistent\nvegetation",
+    "Already under human use\nbefore event",
+    "Regeneration",
+    "Other\ntransitions",
 ]
-STAGE_LABELS = ["Pré-evento (t−1)", "Ano da detecção (t)", "Pós-evento (t+1)"]
+STAGE_LABELS = ["Pre-event (t−1)", "Detection year (t)", "Post-event (t+1)"]
 HOT_COLOR, CONTROL_COLOR = "#B2182B", "#4D6A7A"
 GI_COLORS = {
     "Hot Spot 99%": "#B2182B",
@@ -65,11 +72,20 @@ GI_LABELS = {
     "Hot Spot 99%": "Hot spot (99%)",
     "Hot Spot 95%": "Hot spot (95%)",
     "Hot Spot 90%": "Hot spot (90%)",
-    "Não significante": "Não significante",
+    "Não significante": "Not significant",
     "Cold Spot 90%": "Cold spot (90%)",
     "Cold Spot 95%": "Cold spot (95%)",
     "Cold Spot 99%": "Cold spot (99%)",
 }
+FIGURE_TITLES = [
+    "Figure 1. Deforestation hotspots in the Cerrado (Getis-Ord Gi*), 2020–2025: (a) deforested area (km²); (b) share of municipal area deforested (%).",
+    "Figure 2. Temporal dynamics of deforestation pressure: (a) annual deforested area and number of hotspot municipalities; (b) hotspot persistence and shift in the deforested-area center of gravity.",
+    "Figure 3. Hotspot sensitivity to neighborhood definitions and multiple-testing correction: (a) area; (b) proportion; (c) Jaccard index relative to Queen contiguity.",
+    "Figure 4. Land-cover group flows before (t−1), during (t), and after (t+1) detection, across the 2020–2024 cohorts.",
+    "Figure 5. Pixel-level trajectory typology: (a) hotspots versus controls; (b) conversion in the detection year by Gi* confidence level. Error bars show 95% confidence intervals from municipality bootstrap.",
+    "Figure 6. Cumulative conversion of the natural area at t−1 by detection cohort: (a) hotspots; (b) controls; (c) conversion rate by state through 2025.",
+    "Figure 7. Post-deforestation conversion and land use in hotspot municipalities: (a) natural-vegetation conversion rate; (b) predominant destination class.",
+]
 
 
 def style():
@@ -93,14 +109,12 @@ def style():
     )
 
 
-def pt_number(value, decimals=0):
-    """Formata números no padrão brasileiro (ponto de milhar e vírgula decimal)."""
-    text = f"{value:,.{decimals}f}"
-    return text.replace(",", "§").replace(".", ",").replace("§", ".")
+def en_number(value, decimals=0):
+    return f"{value:,.{decimals}f}"
 
 
-def pt_formatter(decimals=0):
-    return FuncFormatter(lambda value, _: pt_number(value, decimals))
+def en_formatter(decimals=0):
+    return FuncFormatter(lambda value, _: en_number(value, decimals))
 
 
 def panel_label(ax, letter):
@@ -168,13 +182,12 @@ def fig_gi_maps(frame, states, outline):
     fig, axes = plt.subplots(1, 2, figsize=(12, 6.4))
     order = list(GI_COLORS)
     for ax, column, title, letter in (
-        (axes[0], "gi_bin", "Área desmatada (km²)", "a"),
-        (axes[1], "gi_bin_pct", "Proporção da área municipal desmatada (%)", "b"),
+        (axes[0], "gi_bin", "Deforested area (km²)", "a"),
+        (axes[1], "gi_bin_pct", "Share of municipal area deforested (%)", "b"),
     ):
-        categorical_map(ax, merged, column, GI_COLORS, GI_LABELS, order, title, legend_title="Gi* (confiança)")
+        categorical_map(ax, merged, column, GI_COLORS, GI_LABELS, order, title, legend_title="Gi* confidence")
         finish_map(ax, outline, states, bounds)
         panel_label(ax, letter)
-    fig.suptitle("Hotspots de desmatamento (Getis-Ord Gi*) por município no Cerrado, 2020–2025", y=0.96, fontsize=11)
     fig.tight_layout()
     save(fig, "fig01_hotspots_gi_star.png")
 
@@ -194,9 +207,9 @@ def fig_annual_and_persistence(frame, states, outline):
         "Desaparece (só 2020-2022)": "#F4A582",
     }
     status_labels = {
-        "Persistente": "Persistente (ambos os períodos)",
-        "Emergente (só 2023-2025)": "Emergente (apenas 2023–2025)",
-        "Desaparece (só 2020-2022)": "Extinto (apenas 2020–2022)",
+        "Persistente": "Persistent (both periods)",
+        "Emergente (só 2023-2025)": "Emerging (2023–2025 only)",
+        "Desaparece (só 2020-2022)": "Disappeared (2020–2022 only)",
     }
     merged = frame.merge(stability[["CD_MUN", "status_area"]], on="CD_MUN", how="left")
 
@@ -205,15 +218,15 @@ def fig_annual_and_persistence(frame, states, outline):
     ax0 = fig.add_subplot(grid[0])
     ax0.bar(by_year.index.astype(str), by_year.to_numpy(), color="#6D8F6A", width=0.65)
     for index, value in enumerate(by_year.to_numpy()):
-        ax0.text(index, value + 600, pt_number(value), ha="center", fontsize=8)
-    ax0.set_ylabel("Área desmatada (km²)")
-    ax0.yaxis.set_major_formatter(pt_formatter())
-    ax0.set_xlabel("Ano PRODES")
+        ax0.text(index, value + 600, en_number(value), ha="center", fontsize=8)
+    ax0.set_ylabel("Deforested area (km²)")
+    ax0.yaxis.set_major_formatter(en_formatter())
+    ax0.set_xlabel("PRODES year")
     ax0.set_ylim(0, by_year.max() * 1.12)
     twin = ax0.twinx()
     twin.spines["right"].set_visible(True)
     twin.plot(annual_hot["periodo"].astype(str), annual_hot["n_hotspots"], color=HOT_COLOR, marker="o", linewidth=1.5)
-    twin.set_ylabel("Municípios hotspot por ano (n)", color=HOT_COLOR)
+    twin.set_ylabel("Hotspot municipalities per year (n)", color=HOT_COLOR)
     twin.tick_params(axis="y", colors=HOT_COLOR)
     twin.set_ylim(0, annual_hot["n_hotspots"].max() * 1.25)
     panel_label(ax0, "a")
@@ -229,27 +242,26 @@ def fig_annual_and_persistence(frame, states, outline):
     ax1.scatter([points.iloc[0].x], [points.iloc[0].y], s=28, color="white", edgecolor="black", zorder=6)
     ax1.scatter([points.iloc[1].x], [points.iloc[1].y], s=28, color="black", zorder=6)
     handles = [Patch(facecolor=status_colors[s], label=status_labels[s]) for s in status_colors]
-    handles.append(Line2D([0], [0], color="black", marker="o", mfc="white", label="Centro de gravidade (2020–2022 → 2023–2025)"))
+    handles.append(Line2D([0], [0], color="black", marker="o", mfc="white", label="Center of gravity (2020–2022 → 2023–2025)"))
     ax1.legend(handles=handles, loc="upper left", frameon=False, fontsize=7.5)
     panel_label(ax1, "b")
-    fig.suptitle("Dinâmica temporal da pressão de desmatamento", y=0.98, fontsize=11)
     save(fig, "fig02_dinamica_temporal.png")
 
 
 def fig_robustness():
     table = pd.read_csv(config.REFINED_DIR / "robustez_gi_vizinhanca.csv")
     names = list(dict.fromkeys(table["vizinhanca"]))
-    short = ["Queen\n(base)", "Queen\n2ª ordem", "8 vizinhos\nmais próximos", "Banda\n150 km"]
+    short = ["Queen\n(base)", "Queen\n2nd order", "8 nearest\nneighbors", "150 km\ndistance band"]
     fig, axes = plt.subplots(1, 3, figsize=(13, 4.4), gridspec_kw={"width_ratios": [1.25, 1.25, 0.9]})
     positions = np.arange(len(names))
     width = 0.38
     for ax, variable, title, letter in (
-        (axes[0], "area", "Área desmatada (km²)", "a"),
-        (axes[1], "pct", "Proporção da área municipal (%)", "b"),
+        (axes[0], "area", "Deforested area (km²)", "a"),
+        (axes[1], "pct", "Share of municipal area (%)", "b"),
     ):
         part = table[table["variavel"] == variable].set_index("vizinhanca").loc[names]
-        ax.bar(positions - width / 2, part["n_hotspots"], width, color=HOT_COLOR, label="Pseudo p-valor (permutação)")
-        ax.bar(positions + width / 2, part["n_hotspots_fdr"], width, color="#F4A582", label="Após correção FDR (q = 0,05)")
+        ax.bar(positions - width / 2, part["n_hotspots"], width, color=HOT_COLOR, label="Permutation pseudo-p value")
+        ax.bar(positions + width / 2, part["n_hotspots_fdr"], width, color="#F4A582", label="After FDR correction (q = 0.05)")
         for x, (a, b) in enumerate(zip(part["n_hotspots"], part["n_hotspots_fdr"])):
             ax.text(x - width / 2, a + 6, str(a), ha="center", fontsize=7.5)
             ax.text(x + width / 2, b + 6, str(b), ha="center", fontsize=7.5)
@@ -258,7 +270,7 @@ def fig_robustness():
         ax.set_title(title, fontsize=9.5)
         ax.set_ylim(0, 560)
         panel_label(ax, letter)
-    axes[0].set_ylabel("Municípios classificados como hot spot (n)")
+    axes[0].set_ylabel("Municipalities classified as hot spots (n)")
     axes[0].legend(frameon=False, loc="upper left")
     jaccard = (
         table[table["vizinhanca"] != names[0]]
@@ -266,17 +278,16 @@ def fig_robustness():
         .loc[names[1:]]
     )
     ax = axes[2]
-    ax.barh(np.arange(3) - 0.2, jaccard["area"], 0.38, color=CONTROL_COLOR, label="Área")
-    ax.barh(np.arange(3) + 0.2, jaccard["pct"], 0.38, color="#9DB4C0", label="Proporção")
+    ax.barh(np.arange(3) - 0.2, jaccard["area"], 0.38, color=CONTROL_COLOR, label="Area")
+    ax.barh(np.arange(3) + 0.2, jaccard["pct"], 0.38, color="#9DB4C0", label="Proportion")
     ax.set_yticks(np.arange(3))
     ax.set_yticklabels(short[1:])
     ax.set_xlim(0, 1)
-    ax.set_xlabel("Índice de Jaccard em relação ao Queen")
-    ax.xaxis.set_major_formatter(pt_formatter(1))
+    ax.set_xlabel("Jaccard index relative to Queen")
+    ax.xaxis.set_major_formatter(en_formatter(1))
     ax.legend(frameon=False, loc="lower right")
     ax.invert_yaxis()
     panel_label(ax, "c")
-    fig.suptitle("Sensibilidade dos hotspots à definição de vizinhança e à correção para testes múltiplos", y=1.02, fontsize=11)
     fig.tight_layout()
     save(fig, "fig03_robustez_gi_star.png")
 
@@ -312,7 +323,7 @@ def draw_sankey(ax, first, second, title):
                                        color=GROUP_COLORS[GROUP_ORDER[group_index]], zorder=3))
             if value / total > 0.035:
                 ax.text(x_positions[stage] + bar_width / 2 + 0.03, cursor + value / 2,
-                        pt_number(100 * value / total, 1) + "%", va="center", ha="left", fontsize=8)
+                        en_number(100 * value / total, 1) + "%", va="center", ha="left", fontsize=8)
             cursor += value + gap
         tops.append(stage_top)
 
@@ -348,15 +359,14 @@ def draw_sankey(ax, first, second, title):
 def fig_sankey(trajectories):
     fig, axes = plt.subplots(1, 2, figsize=(13, 5.6))
     for ax, group, title, letter in (
-        (axes[0], "Hotspot", "Municípios hotspot", "a"),
-        (axes[1], "Controle", "Municípios de controle", "b"),
+        (axes[0], "Hotspot", "Hot spot municipalities", "a"),
+        (axes[1], "Controle", "Control municipalities", "b"),
     ):
         part = trajectories[(trajectories["year"] <= 2024) & (trajectories["grupo"] == group)]
         draw_sankey(ax, *sankey_flows(part), title)
         panel_label(ax, letter)
-    handles = [Patch(facecolor=GROUP_COLORS[g], label=CLASS_GROUP_NAMES[g]) for g in GROUP_ORDER[:4]]
+    handles = [Patch(facecolor=GROUP_COLORS[g], label=GROUP_LABELS[g]) for g in GROUP_ORDER[:4]]
     fig.legend(handles=handles, loc="lower center", ncol=4, frameon=False, bbox_to_anchor=(0.5, -0.02))
-    fig.suptitle("Fluxos de cobertura dos pixels desmatados (coortes PRODES 2020–2024; área estimada)", y=1.0, fontsize=11)
     fig.tight_layout()
     save(fig, "fig04_fluxos_cobertura.png")
 
@@ -364,7 +374,7 @@ def fig_sankey(trajectories):
 def fig_typology():
     table = pd.read_csv(config.REFINED_DIR / "tipologia_por_grupo.csv")
     levels = pd.read_csv(config.REFINED_DIR / "tipologia_por_nivel_confianca.csv")
-    levels = levels[levels["categoria"] == TYPOLOGY_ORDER[0]].set_index("hot_nivel")
+    levels = levels[levels["categoria"] == "Conversão no ano da detecção"].set_index("hot_nivel")
     fig, axes = plt.subplots(1, 2, figsize=(12.5, 4.6), gridspec_kw={"width_ratios": [1.8, 1]})
     ax = axes[0]
     positions = np.arange(len(TYPOLOGY_ORDER))
@@ -373,32 +383,31 @@ def fig_typology():
         part = table[table["grupo"] == group].set_index("categoria").reindex(TYPOLOGY_ORDER)
         error = [part["participacao_pct"] - part["ic95_inf"], part["ic95_sup"] - part["participacao_pct"]]
         ax.bar(positions + offset, part["participacao_pct"], width, yerr=error, capsize=2.5,
-               color=color, label=group, error_kw=dict(lw=0.9))
+               color=color, label="Hot spot" if group == "Hotspot" else "Control", error_kw=dict(lw=0.9))
         for x, value, high in zip(positions + offset, part["participacao_pct"], part["ic95_sup"]):
-            ax.text(x, high + 1.2, pt_number(value, 1), ha="center", fontsize=7)
+            ax.text(x, high + 1.2, en_number(value, 1), ha="center", fontsize=7)
     ax.set_xticks(positions)
     ax.set_xticklabels(TYPOLOGY_WRAPPED, fontsize=8)
-    ax.set_ylabel("Participação na área desmatada (%)")
+    ax.set_ylabel("Share of deforested area (%)")
     ax.set_ylim(0, 62)
-    ax.yaxis.set_major_formatter(pt_formatter())
-    ax.legend(frameon=False, title="Grupo de municípios")
+    ax.yaxis.set_major_formatter(en_formatter())
+    ax.legend(frameon=False, title="Municipality group")
     panel_label(ax, "a")
 
     ax = axes[1]
-    labels = ["Controle", "Hotspot\n90%", "Hotspot\n95%", "Hotspot\n99%"]
+    labels = ["Control", "Hot spot\n90%", "Hot spot\n95%", "Hot spot\n99%"]
     colors = [CONTROL_COLOR, "#FDBB84", "#EF6548", "#B2182B"]
     levels_used = levels.loc[[0.0, 90.0, 95.0, 99.0]]
     values = levels_used["participacao_pct"].to_numpy()
     low, high = levels_used["ic95_inf"].to_numpy(), levels_used["ic95_sup"].to_numpy()
     ax.bar(np.arange(4), values, 0.6, color=colors, yerr=[values - low, high - values], capsize=3, error_kw=dict(lw=0.9))
     for x, value in enumerate(values):
-        ax.text(x, high[x] + 1.2, pt_number(value, 1), ha="center", fontsize=8)
+        ax.text(x, high[x] + 1.2, en_number(value, 1), ha="center", fontsize=8)
     ax.set_xticks(np.arange(4))
     ax.set_xticklabels(labels)
-    ax.set_ylabel("Conversão no ano da detecção (%)")
+    ax.set_ylabel("Conversion in detection year (%)")
     ax.set_ylim(0, 62)
     panel_label(ax, "b")
-    fig.suptitle("Tipologia de trajetória por pixel: hotspots × controle (IC 95% por bootstrap de municípios)", y=1.03, fontsize=11)
     fig.tight_layout()
     save(fig, "fig05_tipologia_hotspot_controle.png")
 
@@ -420,28 +429,28 @@ def fig_conversion():
                 continue
             ax.plot(part["defasagem_anos"], part["taxa_conversao_acumulada_pct"], marker="o", ms=3.5,
                     color=cmap(k / max(len(years) - 1, 1)), label=str(year))
-        ax.set_title(f"Municípios {'hotspot' if group == 'Hotspot' else 'de controle'}", fontsize=9.5)
-        ax.set_xlabel("Anos após o ano de detecção")
+        ax.set_title(f"{'Hot spot' if group == 'Hotspot' else 'Control'} municipalities", fontsize=9.5)
+        ax.set_xlabel("Years after detection")
         ax.set_xticks(range(6))
         ax.grid(alpha=0.3, linewidth=0.5)
         panel_label(ax, letter)
-    axes[0].set_ylabel("Conversão acumulada da área natural em t−1 (%)")
-    axes[1].legend(title="Coorte PRODES", frameon=False, fontsize=7.5, loc="center right")
+    axes[0].set_ylabel("Cumulative conversion of natural area at t−1 (%)")
+    axes[1].legend(title="PRODES cohort", frameon=False, fontsize=7.5, loc="center right")
     ax = fig.add_subplot(grid[2])
     order = states[states["grupo"] == "Hotspot"].sort_values("area_convertida_km2", ascending=False)["SIGLA_UF"].tolist()
     height = 0.38
     ypos = np.arange(len(order))
     for offset, group, color in ((-height / 2, "Hotspot", HOT_COLOR), (height / 2, "Controle", CONTROL_COLOR)):
         part = states[states["grupo"] == group].set_index("SIGLA_UF").reindex(order)
-        ax.barh(ypos + offset, part["taxa_conversao_pct"], height, color=color, label=group)
+        label = "Hot spot" if group == "Hotspot" else "Control"
+        ax.barh(ypos + offset, part["taxa_conversao_pct"], height, color=color, label=label)
     ax.set_yticks(ypos)
     ax.set_yticklabels(order)
     ax.invert_yaxis()
     ax.set_xlim(0, 100)
-    ax.set_xlabel("Taxa de conversão até 2025 (%)")
+    ax.set_xlabel("Conversion rate through 2025 (%)")
     ax.legend(frameon=False, loc="lower right")
     panel_label(ax, "c")
-    fig.suptitle("Persistência e velocidade da conversão da vegetação natural", y=1.03, fontsize=11)
     save(fig, "fig06_conversao_acumulada.png")
 
 
@@ -455,17 +464,20 @@ def fig_conversion_maps(frame, states, outline):
     ax = axes[0]
     frame.plot(ax=ax, color="#F7F7F7", edgecolor="none")
     hot.plot(ax=ax, column="taxa_conversao_pct", cmap="YlOrRd", vmin=0, vmax=100, edgecolor="white",
-             linewidth=0.05, legend=True, legend_kwds={"shrink": 0.55, "label": "Taxa de conversão (%)"})
+             linewidth=0.05, legend=True, legend_kwds={"shrink": 0.55, "label": "Conversion rate (%)"})
     finish_map(ax, outline, states, bounds)
-    ax.set_title("Taxa de conversão da vegetação natural (municípios hotspot)", fontsize=9.5)
+    ax.set_title("Natural-vegetation conversion rate (hot spot municipalities)", fontsize=9.5)
     panel_label(ax, "a")
     ax = axes[1]
     colors = {"Mosaico de Agricultura e Pastagem": "#8C6BB1", "Pastagem": "#41AB5D"}
-    categorical_map(ax, hot, "destino_predominante", colors, {k: k for k in colors}, list(colors),
-                    "Classe de destino predominante", legend_title="Uso após a conversão")
+    destination_labels = {
+        "Mosaico de Agricultura e Pastagem": "Agriculture and pasture mosaic",
+        "Pastagem": "Pasture",
+    }
+    categorical_map(ax, hot, "destino_predominante", colors, destination_labels, list(colors),
+                    "Predominant destination class", legend_title="Post-conversion land use")
     finish_map(ax, outline, states, bounds)
     panel_label(ax, "b")
-    fig.suptitle("Conversão e uso da terra pós-desmatamento nos municípios hotspot", y=0.96, fontsize=11)
     fig.tight_layout()
     save(fig, "fig07_conversao_destino.png")
 
@@ -474,8 +486,7 @@ def main():
     logging.basicConfig(level=logging.INFO, format="%(asctime)s [%(levelname)s] %(message)s")
     style()
     config.FIGURES_DIR.mkdir(parents=True, exist_ok=True)
-    for old in config.FIGURES_DIR.glob("*.png"):
-        old.unlink()
+    (config.FIGURES_DIR / "titulos_figuras.txt").write_text("\n".join(FIGURE_TITLES) + "\n", encoding="utf-8")
     trajectories = pd.read_parquet(config.REFINED_DIR / "_trajetorias_pixel.parquet")
     frame, states, outline = load_map_layers()
     frame["CD_MUN"] = frame["CD_MUN"].astype("string")
